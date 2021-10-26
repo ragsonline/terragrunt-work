@@ -8,7 +8,7 @@ locals {
 
 }
 inputs = {
-  enable_nat_gateway = false
+  enable_nat_gateway = true
   enable_vpn_gateway = false
   }
 
