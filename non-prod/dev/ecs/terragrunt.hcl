@@ -2,40 +2,44 @@ include "root" {
   path = find_in_parent_folders()
 }
 
-# Indicate the input values to use for the variables of the module.
-inputs = {
-  environment          = "dev"
-  cluster              = "morelikeahumanecs"
-  vpc_cidr             = "10.0.0.0/16"
-  public_subnet_cidrs  = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
-  private_subnet_cidrs = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
-  availability_zones   = ["us-east-1a", "us-east-1b", "us-east-1c"]
-  max_size             = 4
-  min_size             = 2
-  desired_capacity     = 2
-  instance_type        = "t2.micro"
-  aws_ecs_ami          = "ami-0eba366342cb1dfda"
-  vpc_id = dependency.vpc.outputs.vpc_id
-  public_subnet_ids=dependency.vpc.outputs.public_subnet_ids
+locals {
+  environment_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
+  account_vars     = read_terragrunt_config(find_in_parent_folders("account.hcl"))
+  env = local.environment_vars.locals.environment
+  owner         = local.account_vars.locals.owner
+  instance_type = local.environment_vars.locals.instance_type
 
-  tags = {
-    Terraform = "true"
-    Environment = "dev"
-  }
 }
-
 include "envcommon" {
   path   = "${dirname(find_in_parent_folders())}/_envcommon/ecs.hcl"
   expose = true
 }
+# Indicate the input values to use for the variables of the module.
 
-dependency "vpc" {
-   config_path = "../vpc"
-   skip_outputs = true
-  mock_outputs = {
-    vpc_id     = "temporary-dummy-id"
-    public_subnet_ids = ["temporary-dummy-value"]
-
+inputs = {
+  elb_port      = 80
+  instance_type = "${local.instance_type}"
+  min_size      = 2
+  max_size      = 2
+  name          = "app-${local.env}"
+  server_port   = 8080
+  tags = {
+    Environment = "${local.env}"
+    Owner       = "${local.owner}"
   }
+  version     = "~> 3.5.0"
+  vpc_id      = dependency.vpc.outputs.vpc_id
+  vpc_subnets = dependency.vpc.outputs.private_subnets
 }
 
+dependency "vpc" {
+  config_path = "../vpc"
+  mock_outputs = {
+    vpc_id = "vpc-012341a0dd8b01234"
+    private_subnets = [
+      "subnet-003601fe683fd1111",
+      "subnet-0f0787cffc6ae1112",
+      "subnet-00e05034aa90b1112"
+    ],
+  }
+}
