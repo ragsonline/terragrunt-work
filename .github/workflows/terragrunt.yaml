@@ -28,6 +28,6 @@ jobs:
       # Runs a single command using the runners shell
       - name: Run terragrunt plan all
         run: |
-	     pwd
-	     terrgrunt run-all plan
+            pwd
+             terrgrunt run-all plan
 
